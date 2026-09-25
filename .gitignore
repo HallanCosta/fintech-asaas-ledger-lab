@@ -1,0 +1,33 @@
+# Java / Maven
+target/
+*.class
+.mvn/timing.properties
+
+# Frontend / Node
+node_modules/
+dist/
+build/
+.next/
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+# IDE / OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local runtime data
+logs/
+*.log
+tmp/
