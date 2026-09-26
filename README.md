@@ -54,6 +54,26 @@ npm install
 npm run dev
 ```
 
+## Validação local
+
+O pipeline do GitHub Actions executa os mesmos comandos essenciais usados no
+desenvolvimento local:
+
+```bash
+docker compose config --quiet
+
+cd server
+mvn --batch-mode verify
+
+cd ../web
+npm ci
+npm run build
+```
+
+O CI usa Java 21, Node.js 24 e valida a configuração do Docker Compose em três
+jobs independentes. O runner hospedado do GitHub já fornece Maven; localmente,
+instale o Maven 3.9+ ou execute o comando dentro de uma imagem Maven compatível.
+
 ## Próximos cortes
 
 1. persistir o Event Store no PostgreSQL;
