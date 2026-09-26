@@ -4,11 +4,11 @@ Não precisamos abrir tudo de uma vez. A recomendação é abrir as issues dos d
 
 ## Marco 0 — Fundamentos e ambiente
 
-- [ ] **LAB-001 — Criar setup do server com Java 21 e Spring Boot** — aplicação sobe e responde `/api/health`.
-- [ ] **LAB-002 — Criar setup do web com React e Vite** — dashboard dark inicia em `localhost:5173`.
-- [ ] **LAB-003 — Adicionar PostgreSQL e Redis com Docker Compose** — containers têm health checks e volumes locais.
-- [ ] **LAB-004 — Documentar configuração local e segredos** — `.env.example`, `.gitignore` e instruções de execução.
-- [ ] **LAB-005 — Criar pipeline mínimo de build e testes** — server e web têm comandos reproduzíveis.
+- [x] **LAB-001 — Criar setup do server com Java 21 e Spring Boot** — aplicação sobe e responde `/api/health`.
+- [x] **LAB-002 — Criar setup do web com React e Vite** — dashboard dark inicia em `localhost:5173`.
+- [x] **LAB-003 — Adicionar PostgreSQL e Redis com Docker Compose** — containers têm health checks e volumes locais.
+- [x] **LAB-004 — Documentar configuração local e segredos** — `.env.example`, `.gitignore` e instruções de execução.
+- [x] **LAB-005 — Criar pipeline mínimo de build e testes** — server e web têm comandos reproduzíveis.
 
 ## Marco 1 — Java e domínio financeiro
 
