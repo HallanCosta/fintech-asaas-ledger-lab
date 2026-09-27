@@ -22,6 +22,6 @@ Fontes: [Portal do desenvolvedor Inter Empresas](https://developers.inter.co/) e
 
 ## Decisão de laboratório
 
-Antes de conectar credenciais reais, usamos uma implementação fake do gateway e payloads fixos. Assim conseguimos estudar idempotência, replay, reconciliação e falhas sem risco operacional.
+Antes de conectar credenciais reais, usamos uma implementação fake do gateway e payloads fixos. Assim conseguimos estudar autenticação, normalização, reconciliação e falhas sem risco operacional.
 
 Quando o adapter real entrar, webhook e polling deverão convergir para o mesmo `PixImportService`. A origem muda; as invariantes do ledger não.

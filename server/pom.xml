@@ -15,7 +15,7 @@
     <artifactId>fintech-inter-ledger-server</artifactId>
     <version>0.1.0-SNAPSHOT</version>
     <name>fintech-inter-ledger-server</name>
-    <description>Laboratório Java de ledger, Event Sourcing e integração com o Banco Inter</description>
+    <description>Laboratório Java de ledger e integração com o Banco Inter PJ</description>
 
     <properties>
         <java.version>21</java.version>

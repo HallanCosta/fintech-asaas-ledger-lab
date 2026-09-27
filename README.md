@@ -1,28 +1,26 @@
 # Fintech Inter Ledger Lab
 
-Laboratório de estudo em Java sobre integração bancária, ledger financeiro, partidas dobradas, CQRS, Event Sourcing e arquitetura orientada a eventos.
+Laboratório de estudo em Java 21 e Spring Boot para aprender fundamentos de Java e integrar com a API PJ do Banco Inter.
 
 O repositório agora é organizado como um monorepo simples:
 
 ```text
 server/  → Java 21 + Spring Boot
-web/     → React + Vite
-infra/   → reservado para scripts de infraestrutura
-docs/    → arquitetura e backlog de estudo
+docs/    → integração, arquitetura simples e backlog de estudo
+web/     → protótipo visual mantido fora do escopo atual
 ```
 
 ## Primeiro experimento
 
-O núcleo atual é Java 21 puro e não chama o Banco Inter ainda. Ele simula a entrada de um PIX normalizado e demonstra:
+O ponto de partida é um server Java 21 com Spring Boot e um domínio financeiro pequeno para estudar:
 
-- `LedgerTransaction` balanceada em partidas dobradas;
-- `PixReceived` e `LedgerTransactionPosted` como eventos imutáveis;
-- Event Store append-only em memória;
-- projeção de saldo via Event Bus;
-- replay da projeção;
-- deduplicação por identificador externo.
+- `Money` como value object;
+- `LedgerTransaction` com partidas dobradas;
+- normalização de transações externas;
+- contrato de gateway para a integração com o Inter;
+- testes de regras financeiras.
 
-Esta primeira iteração aceita somente PIX recebido. O caminho de débito será implementado depois como outro caso de uso, com seus próprios eventos e regras.
+O próximo passo é implementar o cliente autenticado da API PJ do Inter em sandbox.
 
 Subir os serviços locais:
 
@@ -46,40 +44,26 @@ cd server
 mvn test
 ```
 
-Iniciar o frontend React:
-
-```bash
-cd web
-npm install
-npm run dev
-```
-
 ## Validação local
 
-O pipeline do GitHub Actions executa os mesmos comandos essenciais usados no
-desenvolvimento local:
+O pipeline do GitHub Actions executa os comandos essenciais do server:
 
 ```bash
 docker compose config --quiet
 
 cd server
 mvn --batch-mode verify
-
-cd ../web
-npm ci
-npm run build
 ```
 
-O CI usa Java 21, Node.js 24 e valida a configuração do Docker Compose em três
-jobs independentes. O runner hospedado do GitHub já fornece Maven; localmente,
+O CI usa Java 21 e valida a configuração do Docker Compose. O runner hospedado
+do GitHub já fornece Maven; localmente,
 instale o Maven 3.9+ ou execute o comando dentro de uma imagem Maven compatível.
 
 ## Próximos cortes
 
-1. persistir o Event Store no PostgreSQL;
-2. criar projections de extrato e reconciliação;
-3. implementar o adapter OAuth/mTLS da API PJ do Inter;
-4. receber webhook e fazer polling pelo mesmo caso de uso;
-5. adicionar Outbox antes de experimentar Kafka ou NATS.
+1. estudar os recursos modernos de Java no domínio;
+2. implementar o cliente OAuth/mTLS da API PJ do Inter;
+3. normalizar extrato, webhook e reconciliação;
+4. adicionar testes de integração contra o sandbox.
 
-Veja [docs/architecture.md](docs/architecture.md), [docs/event-sourcing.md](docs/event-sourcing.md), [docs/stack.md](docs/stack.md) e [docs/issues.md](docs/issues.md).
+Veja [docs/architecture.md](docs/architecture.md), [docs/inter-integration.md](docs/inter-integration.md), [docs/stack.md](docs/stack.md) e [docs/issues.md](docs/issues.md).
