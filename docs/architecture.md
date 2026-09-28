@@ -8,16 +8,16 @@ HTTP / Spring MVC
         |
 Caso de uso de importação
         |
-Domínio financeiro (Money, contas e transações)
+Modelo normalizado do Inter (transações e valores)
         |
-Gateway do Inter PJ / persistência
+Gateway do Inter PJ / PostgreSQL
 ```
 
 ## Fronteiras
 
 - Controllers conhecem HTTP e DTOs.
 - Casos de uso coordenam a aplicação.
-- O domínio contém regras financeiras e não conhece o Inter.
+- O modelo normalizado contém as regras básicas de entrada e não conhece HTTP.
 - O adapter do Inter traduz OAuth/mTLS, payloads e erros externos.
 - PostgreSQL pode persistir os dados normalizados quando essa etapa for implementada.
 

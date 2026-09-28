@@ -6,7 +6,7 @@ O adapter do Inter deve ficar fora do domínio. A responsabilidade dele é:
 2. configurar o cliente HTTP com certificado e chave da integração;
 3. consultar extrato/saldo ou receber callbacks;
 4. transformar o payload externo em `InterTransaction`;
-5. entregar o resultado ao mesmo caso de uso de importação.
+5. entregar o resultado ao caso de uso de importação.
 
 O domínio não deve conhecer nomes de campos, códigos HTTP, headers ou DTOs do banco.
 
@@ -22,6 +22,6 @@ Fontes: [Portal do desenvolvedor Inter Empresas](https://developers.inter.co/) e
 
 ## Decisão de laboratório
 
-Antes de conectar credenciais reais, usamos uma implementação fake do gateway e payloads fixos. Assim conseguimos estudar autenticação, normalização, reconciliação e falhas sem risco operacional.
+Antes de conectar credenciais reais, usaremos uma implementação fake do gateway e payloads fixos. Assim conseguimos estudar autenticação, normalização, reconciliação e falhas sem risco operacional.
 
-Quando o adapter real entrar, webhook e polling deverão convergir para o mesmo `PixImportService`. A origem muda; as invariantes do ledger não.
+Quando o adapter real entrar, webhook e polling deverão convergir para o mesmo caso de uso de importação. A origem muda; o modelo normalizado permanece estável.

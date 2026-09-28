@@ -1,6 +1,6 @@
 package com.hallancosta.inter;
 
-import com.hallancosta.ledger.InterTransaction;
+import com.hallancosta.inter.model.InterTransaction;
 
 import java.time.Instant;
 import java.util.List;

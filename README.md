@@ -12,13 +12,12 @@ web/     → protótipo visual mantido fora do escopo atual
 
 ## Primeiro experimento
 
-O ponto de partida é um server Java 21 com Spring Boot e um domínio financeiro pequeno para estudar:
+O ponto de partida é um server Java 21 com Spring Boot e um modelo pequeno para estudar:
 
-- `Money` como value object;
-- `LedgerTransaction` com partidas dobradas;
-- normalização de transações externas;
+- `InterTransaction` como representação normalizada do movimento;
+- `Money` para valores monetários sem `double`;
 - contrato de gateway para a integração com o Inter;
-- testes de regras financeiras.
+- testes de validação do modelo.
 
 O próximo passo é implementar o cliente autenticado da API PJ do Inter em sandbox.
 
@@ -28,14 +27,49 @@ Subir os serviços locais:
 docker compose up -d
 ```
 
-Iniciar o servidor Java:
+Iniciar o servidor Java usando Docker (não é necessário instalar Maven na máquina):
+
+```bash
+docker run --rm -it --network host \
+  --user "$(id -u):$(id -g)" \
+  -e MAVEN_CONFIG=/tmp/maven \
+  -v /home/hallan/github/hallancosta/fintech-inter-ledger-lab/server:/workspace \
+  -w /workspace \
+  maven:3.9-eclipse-temurin-21 \
+  mvn spring-boot:run
+```
+
+Mantenha esse comando rodando no terminal. O servidor estará funcionando quando
+aparecerem no log mensagens semelhantes a:
+
+```text
+Tomcat started on port 8080 (http)
+Started ServerApplication
+```
+
+Em outro terminal, teste os endpoints:
+
+```bash
+curl http://localhost:8080/api/health
+curl http://localhost:8080/actuator/health
+```
+
+As respostas esperadas são semelhantes a:
+
+```json
+{"status":"UP","service":"fintech-inter-ledger-server","timestamp":"..."}
+{"groups":["liveness","readiness"],"status":"UP"}
+```
+
+Para parar o servidor, pressione `Ctrl+C` no terminal em que ele está rodando.
+
+Se o Maven já estiver instalado localmente, também é possível iniciar o servidor
+diretamente:
 
 ```bash
 cd server
 mvn spring-boot:run
 ```
-
-O endpoint inicial é `http://localhost:8080/api/health`.
 
 Os testes de aprendizado podem ser executados com:
 

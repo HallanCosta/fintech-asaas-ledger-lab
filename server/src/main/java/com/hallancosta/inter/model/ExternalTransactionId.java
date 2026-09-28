@@ -1,4 +1,4 @@
-package com.hallancosta.ledger;
+package com.hallancosta.inter.model;
 
 import java.util.Objects;
 
