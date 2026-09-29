@@ -47,7 +47,9 @@ Iniciar o servidor Java usando Docker (não é necessário instalar Maven na má
 docker run --rm -it --network host \
   --user "$(id -u):$(id -g)" \
   -e MAVEN_CONFIG=/tmp/maven \
+  --env-file /home/hallan/github/hallancosta/fintech-inter-ledger-lab/server/.env \
   -v /home/hallan/github/hallancosta/fintech-inter-ledger-lab/server:/workspace \
+  -v /home/hallan/github/hallancosta/fintech-inter-ledger-lab/secrets/inter-api:/secrets/inter-api:ro \
   -w /workspace \
   maven:3.9-eclipse-temurin-21 \
   mvn spring-boot:run
@@ -57,15 +59,15 @@ Mantenha esse comando rodando no terminal. O servidor estará funcionando quando
 aparecerem no log mensagens semelhantes a:
 
 ```text
-Tomcat started on port 8080 (http)
+Tomcat started on port 9090 (http)
 Started ServerApplication
 ```
 
 Em outro terminal, teste os endpoints:
 
 ```bash
-curl http://localhost:8080/api/health
-curl http://localhost:8080/actuator/health
+curl http://localhost:9090/api/health
+curl http://localhost:9090/actuator/health
 ```
 
 As respostas esperadas são semelhantes a:
@@ -77,19 +79,16 @@ As respostas esperadas são semelhantes a:
 
 Para parar o servidor, pressione `Ctrl+C` no terminal em que ele está rodando.
 
-Se o Maven já estiver instalado localmente, também é possível iniciar o servidor
-diretamente:
-
-```bash
-cd server
-mvn spring-boot:run
-```
-
 Os testes de aprendizado podem ser executados com:
 
 ```bash
-cd server
-mvn test
+docker run --rm -it \
+  --user "$(id -u):$(id -g)" \
+  -e MAVEN_CONFIG=/tmp/maven \
+  -v /home/hallan/github/hallancosta/fintech-inter-ledger-lab/server:/workspace \
+  -w /workspace \
+  maven:3.9-eclipse-temurin-21 \
+  mvn test
 ```
 
 ## Preparar a integração com o Inter
@@ -99,35 +98,44 @@ certificado. O projeto espera o certificado no formato PKCS12 (`.p12` ou
 `.pfx`), como usado pelo SDK Java oficial. Não faça commit do arquivo: ele já
 está ignorado pelo `.gitignore`.
 
-O primeiro teste real será somente depois de você ter o `client id`, o
-`client secret`, o certificado e a senha do certificado. Deixe esses valores
-apenas no terminal ou em um arquivo local ignorado:
+O ZIP `Inter_API-Chave_e_Certificado.zip` já foi extraído localmente e convertido
+para `secrets/inter-api/inter-api-client.p12`. O arquivo `server/.env` já contém
+o caminho do certificado, a senha local do PKCS12 e as credenciais OAuth. Esse
+arquivo é local e ignorado pelo Git.
+O `INTER_ACCOUNT_ID` pode ficar vazio quando a integração estiver ligada a uma
+única conta corrente; ele serve para selecionar uma conta quando houver mais de
+uma associada à integração.
 
-```bash
-export INTER_ENABLED=true
-export INTER_ENVIRONMENT=SANDBOX
-export INTER_BASE_URL=https://cdpj-sandbox.partners.uatinter.co
-export INTER_CLIENT_ID='seu-client-id'
-export INTER_CLIENT_SECRET='seu-client-secret'
-export INTER_CERTIFICATE_PATH="$PWD/../secrets/inter-sandbox.pfx"
-export INTER_CERTIFICATE_PASSWORD='senha-do-certificado'
-export INTER_ACCOUNT_ID='sua-conta-corrente-se-houver'
-export INTER_SCOPE='extrato.read'
+As credenciais devem ficar somente no arquivo local `server/.env`:
+
+```dotenv
+INTER_ENABLED=true
+INTER_CLIENT_ID=seu-client-id
+INTER_CLIENT_SECRET=seu-client-secret
+INTER_ACCOUNT_ID=
 ```
 
-Com o escopo de leitura, suba o server e consulte saldo/extrato pelos clientes
-Java:
+O comando Docker acima carrega esse arquivo e monta o certificado em modo
+somente leitura.
 
-```bash
-export INTER_SCOPE='extrato.read'
-```
+O escopo inicial já está configurado como `extrato.read` no `server/.env`.
 
 Com o server rodando e a integração habilitada, as rotas de laboratório são:
 
 ```bash
-curl http://localhost:8080/api/inter/balance
-curl 'http://localhost:8080/api/inter/statement?from=2026-09-29&to=2026-09-29'
+curl http://localhost:9090/api/inter/balance
+curl 'http://localhost:9090/api/inter/statement?from=2026-09-29&to=2026-09-29'
 ```
+
+Validação realizada no Sandbox:
+
+- server iniciado na porta `9090`;
+- `/api/health` respondeu `HTTP 200`;
+- `/api/inter/balance` respondeu `HTTP 200`;
+- `/api/inter/statement` respondeu `HTTP 200`;
+- testes automatizados: 6 testes passando.
+
+As consultas acima foram somente de leitura; nenhuma transação Pix foi criada.
 
 Depois que esse fluxo básico estiver funcionando, adicionaremos a primeira
 operação Pix com uma issue separada.

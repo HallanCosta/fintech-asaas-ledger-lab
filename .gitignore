@@ -8,12 +8,15 @@ node_modules/
 dist/
 build/
 .next/
+web/*.png
 
 # Local configuration and credentials
 .env
 .env.*
 !.env.example
+secrets/
 *.pem
+*.crt
 *.key
 *.p12
 *.pfx

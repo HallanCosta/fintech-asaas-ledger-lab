@@ -29,8 +29,8 @@ public class InterClientConfiguration {
 
     @Bean
     @ConditionalOnProperty(prefix = "inter", name = "enabled", havingValue = "true")
-    RestClient interRestClient(RestClient.Builder builder, InterProperties properties) {
-        return builder
+    RestClient interRestClient(InterProperties properties) {
+        return RestClient.builder()
                 .baseUrl(required(properties.getBaseUrl(), "inter.base-url"))
                 .requestFactory(new JdkClientHttpRequestFactory(buildHttpClient(properties)))
                 .build();
