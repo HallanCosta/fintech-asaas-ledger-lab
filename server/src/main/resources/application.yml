@@ -35,5 +35,5 @@ inter:
   certificate-path: ${INTER_CERTIFICATE_PATH:}
   certificate-password: ${INTER_CERTIFICATE_PASSWORD:}
   account-id: ${INTER_ACCOUNT_ID:}
-  # Para extrato: extrato.read. Para cobrança Pix, inclua cob.write (e/ou cob.read).
+  # Primeiro passo do laboratório: leitura do extrato.
   scope: ${INTER_SCOPE:extrato.read}

@@ -2,7 +2,6 @@ package com.hallancosta.inter.config;
 
 import com.hallancosta.inter.InterBankingClient;
 import com.hallancosta.inter.auth.InterOAuthClient;
-import com.hallancosta.inter.pix.InterPixClient;
 import java.io.InputStream;
 import java.net.http.HttpClient;
 import java.nio.file.Files;
@@ -50,15 +49,6 @@ public class InterClientConfiguration {
             InterOAuthClient oauthClient,
             InterProperties properties) {
         return new InterBankingClient(interRestClient, oauthClient, properties);
-    }
-
-    @Bean
-    @ConditionalOnProperty(prefix = "inter", name = "enabled", havingValue = "true")
-    InterPixClient interPixClient(
-            RestClient interRestClient,
-            InterOAuthClient oauthClient,
-            InterProperties properties) {
-        return new InterPixClient(interRestClient, oauthClient, properties);
     }
 
     private static HttpClient buildHttpClient(InterProperties properties) {

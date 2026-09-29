@@ -3,16 +3,11 @@ package com.hallancosta.inter.api;
 import com.hallancosta.inter.InterBankingClient;
 import com.hallancosta.inter.external.InterBalanceResponse;
 import com.hallancosta.inter.model.InterTransaction;
-import com.hallancosta.inter.pix.InterPixClient;
-import com.hallancosta.inter.pix.model.ImmediatePixChargeRequest;
-import com.hallancosta.inter.pix.model.ImmediatePixChargeResponse;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,11 +19,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class InterController {
 
     private final InterBankingClient bankingClient;
-    private final InterPixClient pixClient;
 
-    public InterController(InterBankingClient bankingClient, InterPixClient pixClient) {
+    public InterController(InterBankingClient bankingClient) {
         this.bankingClient = bankingClient;
-        this.pixClient = pixClient;
     }
 
     @GetMapping("/balance")
@@ -48,9 +41,4 @@ public class InterController {
                 to.plusDays(1).atStartOfDay().toInstant(ZoneOffset.UTC).minusNanos(1));
     }
 
-    @PostMapping("/pix/charges")
-    public ImmediatePixChargeResponse createPixCharge(
-            @RequestBody ImmediatePixChargeRequest request) {
-        return pixClient.createImmediateCharge(request);
-    }
 }

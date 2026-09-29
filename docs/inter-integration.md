@@ -27,7 +27,6 @@ O adapter real já está preparado, mas desligado por padrão:
 - `InterOAuthClient` faz `client_credentials`, usa Basic Auth e mantém o token em cache;
 - `InterClientConfiguration` carrega o certificado PKCS12 e monta o mTLS;
 - `InterBankingClient` chama saldo e extrato e converte o JSON externo para `InterTransaction`;
-- `InterPixClient` cria/consulta uma cobrança Pix imediata;
 - `InterController` expõe rotas de laboratório somente quando `INTER_ENABLED=true`.
 
 Os testes usam `MockRestServiceServer`, sem credenciais e sem chamadas de rede ao

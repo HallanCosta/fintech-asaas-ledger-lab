@@ -32,7 +32,8 @@ OAuth2 client_credentials + certificado mTLS
 ```
 
 O código usa os mesmos caminhos que aparecem no SDK oficial, mas deixa o HTTP
-visível para estudo: token OAuth2, saldo, extrato e criação de cobrança Pix.
+visível para estudo: token OAuth2, saldo e extrato. Pix ficará para uma etapa
+posterior, depois que o acesso básico ao sandbox estiver funcionando.
 
 Subir os serviços locais:
 
@@ -115,10 +116,10 @@ export INTER_SCOPE='extrato.read'
 ```
 
 Com o escopo de leitura, suba o server e consulte saldo/extrato pelos clientes
-Java. Para estudar cobrança Pix, solicite também a permissão `cob.write`:
+Java:
 
 ```bash
-export INTER_SCOPE='extrato.read cob.read cob.write'
+export INTER_SCOPE='extrato.read'
 ```
 
 Com o server rodando e a integração habilitada, as rotas de laboratório são:
@@ -126,20 +127,10 @@ Com o server rodando e a integração habilitada, as rotas de laboratório são:
 ```bash
 curl http://localhost:8080/api/inter/balance
 curl 'http://localhost:8080/api/inter/statement?from=2026-09-29&to=2026-09-29'
-
-curl -X POST http://localhost:8080/api/inter/pix/charges \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "calendario": {"expiration": 3600},
-    "valor": {"original": "10.00"},
-    "chave": "sua-chave-pix",
-    "solicitacaoPagador": "Cobrança de estudo Java"
-  }'
 ```
 
-Essa última chamada cria uma cobrança Pix imediata; ela não envia um Pix para
-outra pessoa. Por isso, ainda vamos executar a primeira operação real com
-cuidado depois que as permissões do sandbox estiverem ativas.
+Depois que esse fluxo básico estiver funcionando, adicionaremos a primeira
+operação Pix com uma issue separada.
 
 Ainda não coloque credenciais reais no repositório. O passo que depende de você
 amanhã é apenas criar/ativar a integração no portal, baixar o certificado e
