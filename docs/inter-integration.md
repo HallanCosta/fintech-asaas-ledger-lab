@@ -20,8 +20,22 @@ O domínio não deve conhecer nomes de campos, códigos HTTP, headers ou DTOs do
 
 Fontes: [Portal do desenvolvedor Inter Empresas](https://developers.inter.co/) e [Dúvidas frequentes oficiais](https://developers.inter.co/duvidas-frequentes).
 
-## Decisão de laboratório
+## Implementação atual
 
-Antes de conectar credenciais reais, usaremos uma implementação fake do gateway e payloads fixos. Assim conseguimos estudar autenticação, normalização, reconciliação e falhas sem risco operacional.
+O adapter real já está preparado, mas desligado por padrão:
 
-Quando o adapter real entrar, webhook e polling deverão convergir para o mesmo caso de uso de importação. A origem muda; o modelo normalizado permanece estável.
+- `InterOAuthClient` faz `client_credentials`, usa Basic Auth e mantém o token em cache;
+- `InterClientConfiguration` carrega o certificado PKCS12 e monta o mTLS;
+- `InterBankingClient` chama saldo e extrato e converte o JSON externo para `InterTransaction`;
+- `InterPixClient` cria/consulta uma cobrança Pix imediata;
+- `InterController` expõe rotas de laboratório somente quando `INTER_ENABLED=true`.
+
+Os testes usam `MockRestServiceServer`, sem credenciais e sem chamadas de rede ao
+Inter. Quando as credenciais estiverem disponíveis, o próximo passo será
+validar o mesmo fluxo no sandbox e observar os payloads reais.
+
+Referências específicas: [SDK Java oficial](https://developers.inter.co/docs/sdks/sdk-java)
+e [código-fonte oficial do SDK](https://github.com/inter-co/pj-sdk-java).
+
+Webhook e polling deverão convergir para o mesmo caso de uso de importação. A
+origem muda; o modelo normalizado permanece estável.

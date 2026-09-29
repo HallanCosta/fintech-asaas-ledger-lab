@@ -22,3 +22,18 @@ management:
     health:
       probes:
         enabled: true
+
+# A integração é desligada por padrão para o server subir sem as credenciais.
+# Quando chegar a hora de testar o sandbox, habilite-a por variáveis de ambiente.
+inter:
+  enabled: ${INTER_ENABLED:false}
+  environment: ${INTER_ENVIRONMENT:SANDBOX}
+  base-url: ${INTER_BASE_URL:https://cdpj-sandbox.partners.uatinter.co}
+  token-path: ${INTER_TOKEN_PATH:/oauth/v2/token}
+  client-id: ${INTER_CLIENT_ID:}
+  client-secret: ${INTER_CLIENT_SECRET:}
+  certificate-path: ${INTER_CERTIFICATE_PATH:}
+  certificate-password: ${INTER_CERTIFICATE_PASSWORD:}
+  account-id: ${INTER_ACCOUNT_ID:}
+  # Para extrato: extrato.read. Para cobrança Pix, inclua cob.write (e/ou cob.read).
+  scope: ${INTER_SCOPE:extrato.read}
