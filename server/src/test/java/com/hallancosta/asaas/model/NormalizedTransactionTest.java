@@ -1,18 +1,17 @@
-package com.hallancosta.inter.model;
-
-import org.junit.jupiter.api.Test;
+package com.hallancosta.asaas.model;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class InterTransactionTest {
+class NormalizedTransactionTest {
 
     @Test
     void criaTransacaoNormalizada() {
-        var transaction = new InterTransaction(
+        var transaction = new NormalizedTransaction(
                 new ExternalTransactionId("E2E-001"),
                 "conta-principal",
                 Money.brl("100.00"),
@@ -33,7 +32,7 @@ class InterTransactionTest {
 
     @Test
     void rejeitaTransacaoSemConta() {
-        assertThrows(IllegalArgumentException.class, () -> new InterTransaction(
+        assertThrows(IllegalArgumentException.class, () -> new NormalizedTransaction(
                 new ExternalTransactionId("E2E-002"),
                 " ",
                 Money.brl("1.00"),

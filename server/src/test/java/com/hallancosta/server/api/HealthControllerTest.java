@@ -12,7 +12,7 @@ class HealthControllerTest {
         var response = new HealthController().health();
 
         assertEquals("UP", response.status());
-        assertEquals("fintech-inter-ledger-server", response.service());
+        assertEquals("fintech-pix-lab-server", response.service());
         assertNotNull(response.timestamp());
     }
 }

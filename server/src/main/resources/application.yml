@@ -1,6 +1,6 @@
 spring:
   application:
-    name: fintech-inter-ledger-server
+    name: fintech-pix-lab-server
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/ledger_lab}
     username: ${SPRING_DATASOURCE_USERNAME:ledger}
@@ -23,17 +23,12 @@ management:
       probes:
         enabled: true
 
-# A integração é desligada por padrão para o server subir sem as credenciais.
-# Quando chegar a hora de testar o sandbox, habilite-a por variáveis de ambiente.
-inter:
-  enabled: ${INTER_ENABLED:false}
-  environment: ${INTER_ENVIRONMENT:SANDBOX}
-  base-url: ${INTER_BASE_URL:https://cdpj-sandbox.partners.uatinter.co}
-  token-path: ${INTER_TOKEN_PATH:/oauth/v2/token}
-  client-id: ${INTER_CLIENT_ID:}
-  client-secret: ${INTER_CLIENT_SECRET:}
-  certificate-path: ${INTER_CERTIFICATE_PATH:}
-  certificate-password: ${INTER_CERTIFICATE_PASSWORD:}
-  account-id: ${INTER_ACCOUNT_ID:}
-  # Primeiro passo do laboratório: leitura do extrato.
-  scope: ${INTER_SCOPE:extrato.read}
+# A integração é desligada por padrão para o server subir sem a API key.
+# Sandbox e produção usam chaves e URLs independentes no Asaas.
+asaas:
+  enabled: ${ASAAS_ENABLED:false}
+  environment: ${ASAAS_ENVIRONMENT:SANDBOX}
+  base-url: ${ASAAS_BASE_URL:https://api-sandbox.asaas.com/v3}
+  api-key: ${ASAAS_API_KEY:}
+  account-id: ${ASAAS_ACCOUNT_ID:}
+  webhook-auth-token: ${ASAAS_WEBHOOK_AUTH_TOKEN:}

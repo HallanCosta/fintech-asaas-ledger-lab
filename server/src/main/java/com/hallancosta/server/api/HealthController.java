@@ -11,7 +11,7 @@ import java.time.Instant;
 public class HealthController {
     @GetMapping("/health")
     public HealthResponse health() {
-        return new HealthResponse("UP", "fintech-inter-ledger-server", Instant.now());
+        return new HealthResponse("UP", "fintech-pix-lab-server", Instant.now());
     }
 
     public record HealthResponse(String status, String service, Instant timestamp) {

@@ -1,25 +1,29 @@
 # Arquitetura atual
 
-O projeto usa uma arquitetura simples para estudar Java e Spring Boot antes da
-integração real com o Inter PJ:
+O projeto mantém uma arquitetura pequena para estudar Java e Spring Boot antes
+de adicionar persistência ou processamento assíncrono:
 
 ```text
 HTTP / Spring MVC
         |
-Caso de uso de importação
+Controller de laboratório
         |
-Modelo normalizado do Inter (transações e valores)
+Caso de uso / modelo normalizado
         |
-Gateway do Inter PJ / PostgreSQL
+Adapter Asaas / PostgreSQL
 ```
 
 ## Fronteiras
 
-- Controllers conhecem HTTP e DTOs.
-- Casos de uso coordenam a aplicação.
-- O modelo normalizado contém as regras básicas de entrada e não conhece HTTP.
-- O adapter do Inter traduz OAuth/mTLS, payloads e erros externos.
-- PostgreSQL pode persistir os dados normalizados quando essa etapa for implementada.
+- Controllers conhecem HTTP e DTOs da API interna.
+- O adapter conhece URL, headers e payloads do Asaas.
+- `NormalizedTransaction` e `Money` não conhecem HTTP nem o JSON externo.
+- PostgreSQL será usado quando a etapa de persistência for estudada.
+- Redis permanece disponível no Compose, mas não é requisito para o fluxo atual.
 
-CQRS, Event Sourcing e Event-Driven não fazem parte deste projeto. Eles serão
-estudados em repositórios separados.
+O Asaas é uma dependência externa substituível. O contrato `AsaasGateway` deixa
+claro onde uma implementação fake pode ser usada nos testes sem credencial.
+
+CQRS, Event Sourcing e Event-Driven não fazem parte deste projeto. O backlog
+prioriza primeiro o fluxo síncrono: chamar API, validar resposta, normalizar e
+exibir o resultado.

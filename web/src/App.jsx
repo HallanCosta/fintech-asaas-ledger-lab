@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Badge } from './components/ui/badge.jsx'
 import { Button } from './components/ui/button.jsx'
 import { Card } from './components/ui/card.jsx'
@@ -58,6 +58,11 @@ const transactions = [
 ]
 
 const transactionFilters = ['Todas', 'Entradas', 'Saídas']
+const balanceFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
+
+function formatBRL(value) {
+  return typeof value === 'number' && Number.isFinite(value) ? balanceFormatter.format(value) : '—'
+}
 
 function LedgerLogo() {
   return (
@@ -115,14 +120,14 @@ function LedgerHeader() {
   )
 }
 
-function MetricCard({ label, value, detail, icon, tone = 'green' }) {
+function MetricCard({ label, value, detail, icon, tone = 'green', state = 'ready' }) {
   return (
     <Card className={`metric-card metric-${tone}`}>
       <div className="metric-topline">
         <span>{label}</span>
         <span className={`metric-icon metric-icon-${tone}`} aria-hidden="true">{icon}</span>
       </div>
-      <strong className="metric-value">{value}</strong>
+      <strong className={`metric-value metric-value-${state}`}>{value}</strong>
       <span className="metric-detail">{detail}</span>
     </Card>
   )
@@ -207,27 +212,44 @@ function TransactionsPanel({ filter, onFilterChange }) {
   )
 }
 
-function AccountPanel() {
+function AccountPanel({ balance, balanceState, balanceError, onRetry }) {
+  const isReady = balanceState === 'success'
+  const isLoading = balanceState === 'loading'
+  const isError = balanceState === 'error'
+
   return (
     <Card as="section" className="panel account-panel" aria-labelledby="account-title">
       <div className="account-panel-heading">
         <div className="account-icon"><WalletIcon /></div>
         <div>
           <span className="panel-kicker">Conta conectada</span>
-          <h2 id="account-title">Conta principal</h2>
-          <span className="account-number">Agência 0001 · Conta •••• 0412</span>
+          <h2 id="account-title">Conta Asaas</h2>
+          <span className="account-number">API financeira · conta monitorada</span>
         </div>
         <Badge variant="success">Ativa</Badge>
       </div>
       <Separator />
       <span className="balance-label">Saldo disponível</span>
-      <strong className="balance-value">R$ 12.480,00</strong>
-      <div className="balance-meta"><span>+ R$ 2.110,00 no período</span><span>↑ 20,3%</span></div>
-      <div className="balance-bar" aria-label="Saldo projetado em 72 por cento"><span /></div>
+      {isReady && <strong className="balance-value">{formatBRL(balance.balance)}</strong>}
+      {isLoading && <div className="balance-loading" role="status" aria-label="Carregando saldo"><i /><i /><i /></div>}
+      {isError && (
+        <div className="balance-error" role="alert">
+          <strong>Saldo indisponível</strong>
+          <span>{balanceError}</span>
+          <Button className="retry-button" onClick={onRetry} type="button" variant="outline">Tentar novamente</Button>
+        </div>
+      )}
+      {isReady && (
+        <>
+          <div className="balance-meta"><span>Saldo retornado pelo Asaas</span><span>100% disponível</span></div>
+          <div className="balance-bar" aria-label="Saldo retornado pelo Asaas"><span style={{ width: '100%' }} /></div>
+        </>
+      )}
       <div className="account-details">
-        <div><span>Última sincronização</span><strong>agora mesmo</strong></div>
-        <div><span>Fonte de dados</span><strong>API bancária</strong></div>
-        <div><span>Certificado</span><strong className="detail-ok"><PulseDot /> válido por 28 dias</strong></div>
+        <div><span>Última sincronização</span><strong>{isReady ? 'agora mesmo' : isLoading ? 'em andamento' : 'aguardando tentativa'}</strong></div>
+        <div><span>Fonte de dados</span><strong>GET /api/asaas/balance</strong></div>
+        <div><span>Ambiente</span><strong>Sandbox Asaas</strong></div>
+        <div><span>Endpoint externo</span><strong>GET /finance/balance</strong></div>
       </div>
     </Card>
   )
@@ -236,7 +258,7 @@ function AccountPanel() {
 function PipelinePanel() {
   const steps = [
     { label: 'Evento recebido', detail: 'Webhook / polling', state: 'done' },
-    { label: 'Normalização', detail: 'InterTransaction', state: 'done' },
+    { label: 'Normalização', detail: 'NormalizedTransaction', state: 'done' },
     { label: 'Ledger lançado', detail: 'Double-entry', state: 'done' },
     { label: 'Saldo projetado', detail: 'Projection atualizada', state: 'current' },
   ]
@@ -285,6 +307,54 @@ function ReconciliationPanel() {
 
 function App() {
   const [filter, setFilter] = useState('Todas')
+  const [balance, setBalance] = useState(null)
+  const [balanceState, setBalanceState] = useState('loading')
+  const [balanceError, setBalanceError] = useState('Não foi possível carregar o saldo da conta.')
+
+  const loadBalance = useCallback(async () => {
+    setBalanceState('loading')
+    setBalanceError('')
+    const controller = new AbortController()
+    const timeoutId = window.setTimeout(() => controller.abort(), 15000)
+
+    try {
+      const response = await fetch('/api/asaas/balance', {
+        headers: { Accept: 'application/json' },
+        signal: controller.signal,
+      })
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+
+      const payload = await response.json()
+      if (!payload || typeof payload.balance !== 'number') {
+        throw new Error('Resposta de saldo inválida')
+      }
+
+      setBalance(payload)
+      setBalanceState('success')
+    } catch (error) {
+      console.error('Falha ao carregar saldo da conta', error)
+      setBalanceState('error')
+      if (error?.name === 'AbortError') {
+        setBalanceError('A API do Asaas não respondeu em 15 segundos. Tente novamente.')
+      } else {
+        setBalanceError('Não foi possível carregar o saldo. Tente novamente.')
+      }
+    } finally {
+      window.clearTimeout(timeoutId)
+    }
+  }, [])
+
+  useEffect(() => {
+    void loadBalance()
+  }, [loadBalance])
+
+  const balanceValue = balanceState === 'success' ? formatBRL(balance?.balance) : balanceState === 'loading' ? 'Carregando…' : 'Indisponível'
+  const environmentValue = balanceState === 'success' ? 'Sandbox' : balanceState === 'loading' ? '—' : 'Indisponível'
+  const endpointValue = balanceState === 'success' ? 'HTTP 200' : balanceState === 'loading' ? '—' : 'Indisponível'
+  const healthValue = balanceState === 'success' ? 'Conectada' : balanceState === 'loading' ? 'Verificando' : 'Indisponível'
+  const healthDetail = balanceState === 'success' ? 'endpoint respondendo HTTP 200' : balanceState === 'loading' ? 'consultando o Asaas' : 'tentar novamente'
 
   return (
     <div className="ledger-shell">
@@ -297,19 +367,19 @@ function App() {
               <h1>Conta principal</h1>
               <p>Uma visão operacional do saldo, dos eventos e dos lançamentos normalizados.</p>
             </div>
-            <div className="intro-meta"><span className="intro-date">29 de setembro de 2026</span><Button className="sync-button" type="button" variant="outline"><span>↻</span> Sincronizar agora</Button></div>
+            <div className="intro-meta"><span className="intro-date">29 de setembro de 2026</span><Button className="sync-button" disabled={balanceState === 'loading'} onClick={loadBalance} type="button" variant="outline"><span>↻</span> {balanceState === 'loading' ? 'Sincronizando…' : 'Sincronizar agora'}</Button></div>
           </section>
 
           <section className="metrics-grid" aria-label="Resumo da conta">
-            <MetricCard detail="atualizado agora" icon="◒" label="Saldo disponível" tone="green" value="R$ 12.480,00" />
-            <MetricCard detail="6 entradas no período" icon="↓" label="A receber" tone="blue" value="R$ 6.730,00" />
-            <MetricCard detail="2 aguardando processamento" icon="↑" label="A pagar" tone="amber" value="R$ 2.460,00" />
-            <MetricCard detail="0 divergências encontradas" icon="✓" label="Saúde do ledger" tone="violet" value="99,8%" />
+            <MetricCard detail={balanceState === 'success' ? 'fonte: API Asaas' : healthDetail} icon="◒" label="Saldo disponível" state={balanceState} tone="green" value={balanceValue} />
+            <MetricCard detail="ambiente configurado em server/.env.local" icon="▣" label="Ambiente" state={balanceState} tone="blue" value={environmentValue} />
+            <MetricCard detail="GET /finance/balance" icon="↑" label="Endpoint de saldo" state={balanceState} tone="amber" value={endpointValue} />
+            <MetricCard detail={healthDetail} icon="✓" label="Conexão com o Asaas" state={balanceState} tone="violet" value={healthValue} />
           </section>
 
           <section className="content-grid">
             <TransactionsPanel filter={filter} onFilterChange={setFilter} />
-            <AccountPanel />
+            <AccountPanel balance={balance} balanceError={balanceError} balanceState={balanceState} onRetry={loadBalance} />
             <PipelinePanel />
             <ReconciliationPanel />
           </section>

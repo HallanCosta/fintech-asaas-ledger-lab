@@ -1,4 +1,4 @@
-package com.hallancosta.inter.model;
+package com.hallancosta.asaas.model;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
