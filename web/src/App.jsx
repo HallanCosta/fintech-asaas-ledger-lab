@@ -4,6 +4,8 @@ import { Button } from './components/ui/button.jsx'
 import { Card } from './components/ui/card.jsx'
 import { Separator } from './components/ui/separator.jsx'
 
+const internalApiKey = import.meta.env.VITE_ASAAS_INTERNAL_API_KEY
+
 const transactions = [
   {
     id: 'pix-8192',
@@ -319,9 +321,15 @@ function App() {
 
     try {
       const response = await fetch('/api/asaas/balance', {
-        headers: { Accept: 'application/json' },
+        headers: {
+          Accept: 'application/json',
+          ...(internalApiKey ? { 'X-Api-Key': internalApiKey } : {}),
+        },
         signal: controller.signal,
       })
+      if (response.status === 401) {
+        throw new Error('HTTP 401')
+      }
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`)
       }
@@ -338,6 +346,10 @@ function App() {
       setBalanceState('error')
       if (error?.name === 'AbortError') {
         setBalanceError('A API do Asaas não respondeu em 15 segundos. Tente novamente.')
+      } else if (error?.message === 'HTTP 401') {
+        setBalanceError(
+          'A API recusou a credencial. Defina VITE_ASAAS_INTERNAL_API_KEY em web/.env.local com o mesmo valor de ASAAS_INTERNAL_API_KEY.',
+        )
       } else {
         setBalanceError('Não foi possível carregar o saldo. Tente novamente.')
       }

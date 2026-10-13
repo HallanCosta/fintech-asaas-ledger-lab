@@ -16,6 +16,7 @@ Adapter Asaas / PostgreSQL
 ## Fronteiras
 
 - Controllers conhecem HTTP e DTOs da API interna.
+- Um filtro exige `X-Api-Key` em `/api/asaas/**`. Health e actuator ficam públicos.
 - O adapter conhece URL, headers e payloads do Asaas.
 - `NormalizedTransaction` e `Money` não conhecem HTTP nem o JSON externo.
 - PostgreSQL será usado quando a etapa de persistência for estudada.

@@ -10,6 +10,7 @@ public class AsaasProperties {
     private String environment = "SANDBOX";
     private String baseUrl = "https://api-sandbox.asaas.com/v3";
     private String apiKey;
+    private String internalApiKey;
     private String accountId;
     private String webhookAuthToken;
 
@@ -43,6 +44,14 @@ public class AsaasProperties {
 
     public void setApiKey(String apiKey) {
         this.apiKey = apiKey;
+    }
+
+    public String getInternalApiKey() {
+        return internalApiKey;
+    }
+
+    public void setInternalApiKey(String internalApiKey) {
+        this.internalApiKey = internalApiKey;
     }
 
     public String getAccountId() {
