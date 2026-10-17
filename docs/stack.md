@@ -14,6 +14,7 @@
 
 - usar `BigDecimal` por meio do value object `Money`;
 - manter API keys fora do Git;
+- proteger `/api/asaas/**` com um segredo interno diferente da chave do Asaas;
 - separar DTOs externos do modelo normalizado;
 - testar regras financeiras sem depender do Sandbox;
 - tratar cobranças e transferências como operações assíncronas até confirmação;

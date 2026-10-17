@@ -1,6 +1,7 @@
 package com.hallancosta.asaas.config;
 
 import com.hallancosta.asaas.AsaasClient;
+import com.hallancosta.asaas.security.AsaasInternalApiKey;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -14,6 +15,7 @@ public class AsaasClientConfiguration {
     @Bean
     @ConditionalOnProperty(prefix = "asaas", name = "enabled", havingValue = "true")
     RestClient asaasRestClient(AsaasProperties properties) {
+        AsaasInternalApiKey.requireWhenEnabled(properties);
         return RestClient.builder()
                 .baseUrl(required(properties.getBaseUrl(), "asaas.base-url"))
                 .build();

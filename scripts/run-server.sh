@@ -40,18 +40,37 @@ if [[ ! -f "$selected_env" ]]; then
   exit 1
 fi
 
+env_value() {
+  local file="$1"
+  local key="$2"
+  awk -F= -v key="$key" '
+    $1 == key {
+      value = substr($0, length(key) + 2)
+      gsub(/\r$/, "", value)
+    }
+    END { printf "%s", value }
+  ' "$file"
+}
+
+require_production_setting() {
+  local key="$1"
+  local value
+  value="$(env_value "$selected_env" "$key")"
+  if [[ -z "${value//[[:space:]]/}" ]]; then
+    echo "Preencha $key em $selected_env antes de iniciar produção." >&2
+    exit 1
+  fi
+}
+
+if [[ "$environment" == "production" ]]; then
+  for required_key in ASAAS_API_KEY ASAAS_BASE_URL ASAAS_INTERNAL_API_KEY; do
+    require_production_setting "$required_key"
+  done
+fi
+
 if ! command -v docker >/dev/null 2>&1; then
   echo "Docker não foi encontrado no PATH." >&2
   exit 1
-fi
-
-if [[ "$environment" == "production" ]]; then
-  for required_key in ASAAS_API_KEY ASAAS_BASE_URL; do
-    if ! awk -F= -v key="$required_key" '$1 == key && $2 != "" { found = 1 } END { exit !found }' "$selected_env"; then
-      echo "Preencha $required_key em $selected_env antes de iniciar produção." >&2
-      exit 1
-    fi
-  done
 fi
 
 temporary_backup=""

@@ -30,5 +30,7 @@ asaas:
   environment: ${ASAAS_ENVIRONMENT:SANDBOX}
   base-url: ${ASAAS_BASE_URL:https://api-sandbox.asaas.com/v3}
   api-key: ${ASAAS_API_KEY:}
+  # Segredo da API interna (header X-Api-Key). Não é a chave do Asaas.
+  internal-api-key: ${ASAAS_INTERNAL_API_KEY:}
   account-id: ${ASAAS_ACCOUNT_ID:}
   webhook-auth-token: ${ASAAS_WEBHOOK_AUTH_TOKEN:}
