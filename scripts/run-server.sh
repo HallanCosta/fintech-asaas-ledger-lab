@@ -7,11 +7,13 @@ SERVER_DIR="$PROJECT_DIR/server"
 RUNTIME_ENV="$SERVER_DIR/.env"
 LOCAL_ENV="$SERVER_DIR/.env.local"
 PRODUCTION_ENV="$SERVER_DIR/.env.production"
+STAGING_ENV="$SERVER_DIR/.env.staging"
 
 usage() {
   cat <<'EOF'
 Uso:
   ./scripts/run-server.sh              Inicia com server/.env.local
+  ./scripts/run-server.sh staging      Inicia com server/.env.staging
   ./scripts/run-server.sh production   Inicia com server/.env.production
 EOF
 }
@@ -23,6 +25,9 @@ case "$environment" in
     ;;
   production)
     selected_env="$PRODUCTION_ENV"
+    ;;
+  staging)
+    selected_env="$STAGING_ENV"
     ;;
   -h|--help)
     usage
@@ -52,19 +57,19 @@ env_value() {
   ' "$file"
 }
 
-require_production_setting() {
+require_environment_setting() {
   local key="$1"
   local value
   value="$(env_value "$selected_env" "$key")"
   if [[ -z "${value//[[:space:]]/}" ]]; then
-    echo "Preencha $key em $selected_env antes de iniciar produção." >&2
+    echo "Preencha $key em $selected_env antes de iniciar o ambiente $environment." >&2
     exit 1
   fi
 }
 
-if [[ "$environment" == "production" ]]; then
+if [[ "$environment" == "production" || "$environment" == "staging" ]]; then
   for required_key in ASAAS_API_KEY ASAAS_BASE_URL ASAAS_INTERNAL_API_KEY; do
-    require_production_setting "$required_key"
+    require_environment_setting "$required_key"
   done
 fi
 

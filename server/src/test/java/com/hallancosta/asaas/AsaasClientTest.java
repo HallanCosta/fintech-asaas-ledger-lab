@@ -13,6 +13,7 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.http.HttpMethod.GET;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
@@ -78,6 +79,20 @@ class AsaasClientTest {
         assertEquals(ExternalTransactionDirection.DEBIT, transactions.get(1).direction());
         assertEquals("25.50", transactions.get(1).amount().amount().toPlainString());
         server.verify();
+    }
+
+    @Test
+    void rejeitaCobrancaComValorNaoPositivoAntesDeChamarOAsaas() {
+        AsaasClient client = new AsaasClient(
+                RestClient.builder().baseUrl("http://asaas.test").build(),
+                properties());
+
+        assertThrows(IllegalArgumentException.class, () -> client.createPixPayment(
+                "cus_001",
+                BigDecimal.ZERO,
+                java.time.LocalDate.now(),
+                "Estudo",
+                "study-001"));
     }
 
     private static AsaasProperties properties() {

@@ -9,6 +9,8 @@ dist/
 build/
 .next/
 web/*.png
+web/test-results/
+web/playwright-report/
 
 # Local configuration and credentials
 .env

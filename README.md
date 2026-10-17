@@ -29,6 +29,17 @@ produção explicitamente:
 ./scripts/run-server.sh production
 ```
 
+Para testar o Sandbox do Asaas explicitamente, use a chave armazenada em
+`server/.env.staging`:
+
+```bash
+./scripts/run-server.sh staging
+```
+
+Se saldo e extrato retornarem `upstreamStatus: 401`, a chave do Sandbox foi
+rejeitada; gere outra no painel do Sandbox e atualize apenas esse arquivo.
+Nunca use a chave de produção para esse teste.
+
 Verifique se o server está funcionando:
 
 ```bash
@@ -58,9 +69,10 @@ Se `ASAAS_ENABLED=true` e `ASAAS_INTERNAL_API_KEY` estiver vazio, ou for igual
 à `ASAAS_API_KEY`, a aplicação não sobe. Isso vale para Sandbox e produção:
 com a integração ligada, as rotas financeiras não podem ficar abertas.
 
-`./scripts/run-server.sh production` também recusa iniciar se
-`ASAAS_API_KEY`, `ASAAS_BASE_URL` ou `ASAAS_INTERNAL_API_KEY` estiverem vazios
-em `server/.env.production`.
+`./scripts/run-server.sh staging` e `./scripts/run-server.sh production`
+recusam iniciar se `ASAAS_API_KEY`, `ASAAS_BASE_URL` ou
+`ASAAS_INTERNAL_API_KEY` estiverem vazios no arquivo de ambiente
+correspondente (`server/.env.staging` ou `server/.env.production`).
 
 ## Autenticação da API interna
 
@@ -125,4 +137,5 @@ Os testes não usam credenciais nem fazem chamadas reais ao Asaas.
 - [Arquitetura](docs/architecture.md)
 - [Stack](docs/stack.md)
 - [Backlog de estudo](docs/issues.md)
+- [Preparação para AWS EC2](docs/deploy-ec2.md)
 - [Documentação oficial do Asaas](https://docs.asaas.com/docs/visao-geral)

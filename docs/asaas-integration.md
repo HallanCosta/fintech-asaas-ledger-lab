@@ -10,7 +10,7 @@ O adapter Asaas fica fora do modelo normalizado. A responsabilidade dele é:
 
 O Asaas não exige OAuth nem certificado mTLS para este fluxo didático. A API
 key é específica de cada ambiente e deve ficar somente nos arquivos ignorados
-`.env.local` e `.env.production`.
+`.env.local`, `.env.staging` e `.env.production`.
 
 A API interna do laboratório é outra credencial. Com `ASAAS_ENABLED=true`, o
 server só sobe se `ASAAS_INTERNAL_API_KEY` estiver preenchida e for diferente
@@ -34,7 +34,9 @@ User-Agent: fintech-pix-lab/0.1
 ## Fluxo de estudo no Sandbox
 
 1. Criar a conta de teste e uma API key.
-2. Habilitar `ASAAS_ENABLED=true` em `server/.env.local`.
+2. Habilitar `ASAAS_ENABLED=true` e preencher `ASAAS_API_KEY` e
+   `ASAAS_INTERNAL_API_KEY` em `server/.env.staging` (ou `server/.env.local`).
+   Inicie o Sandbox com `./scripts/run-server.sh staging`.
 3. Consultar `GET /api/asaas/balance` com o header `X-Api-Key`.
 4. Criar um cliente fictício no Asaas.
 5. Criar uma cobrança com `billingType=PIX`.
@@ -45,6 +47,10 @@ User-Agent: fintech-pix-lab/0.1
 
 O Sandbox não movimenta dinheiro real. A confirmação da cobrança é uma
 simulação feita pela interface do próprio ambiente.
+
+Uma resposta interna `502` com `upstreamStatus: 401` significa que o Asaas
+rejeitou a API key. Nesse caso, gere uma nova chave no Sandbox; não tente
+corrigir usando a credencial de produção.
 
 ## Rotas implementadas
 
