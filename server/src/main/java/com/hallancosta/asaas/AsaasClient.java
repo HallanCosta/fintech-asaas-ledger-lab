@@ -93,8 +93,8 @@ public class AsaasClient implements AsaasGateway {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("customer", required(customer, "customer"));
         body.put("billingType", "PIX");
-        body.put("value", Objects.requireNonNull(value, "value"));
-        body.put("dueDate", Objects.requireNonNull(dueDate, "dueDate"));
+        body.put("value", positive(value, "value"));
+        body.put("dueDate", required(dueDate, "dueDate"));
         if (description != null && !description.isBlank()) {
             body.put("description", description);
         }
@@ -129,7 +129,7 @@ public class AsaasClient implements AsaasGateway {
             String externalReference,
             LocalDate scheduleDate) {
         Map<String, Object> body = new LinkedHashMap<>();
-        body.put("value", Objects.requireNonNull(value, "value"));
+        body.put("value", positive(value, "value"));
         body.put("operationType", "PIX");
         body.put("pixAddressKey", required(pixAddressKey, "pixAddressKey"));
         body.put("pixAddressKeyType", required(pixAddressKeyType, "pixAddressKeyType").toUpperCase(Locale.ROOT));
@@ -217,6 +217,21 @@ public class AsaasClient implements AsaasGateway {
     private static String required(String value, String field) {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException("O campo " + field + " é obrigatório");
+        }
+        return value;
+    }
+
+    private static <T> T required(T value, String field) {
+        if (value == null) {
+            throw new IllegalArgumentException("O campo " + field + " é obrigatório");
+        }
+        return value;
+    }
+
+    private static BigDecimal positive(BigDecimal value, String field) {
+        required(value, field);
+        if (value.signum() <= 0) {
+            throw new IllegalArgumentException("O campo " + field + " precisa ser maior que zero");
         }
         return value;
     }

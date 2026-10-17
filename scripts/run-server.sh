@@ -7,11 +7,13 @@ SERVER_DIR="$PROJECT_DIR/server"
 RUNTIME_ENV="$SERVER_DIR/.env"
 LOCAL_ENV="$SERVER_DIR/.env.local"
 PRODUCTION_ENV="$SERVER_DIR/.env.production"
+STAGING_ENV="$SERVER_DIR/.env.staging"
 
 usage() {
   cat <<'EOF'
 Uso:
   ./scripts/run-server.sh              Inicia com server/.env.local
+  ./scripts/run-server.sh staging      Inicia com server/.env.staging
   ./scripts/run-server.sh production   Inicia com server/.env.production
 EOF
 }
@@ -23,6 +25,9 @@ case "$environment" in
     ;;
   production)
     selected_env="$PRODUCTION_ENV"
+    ;;
+  staging)
+    selected_env="$STAGING_ENV"
     ;;
   -h|--help)
     usage
@@ -45,10 +50,10 @@ if ! command -v docker >/dev/null 2>&1; then
   exit 1
 fi
 
-if [[ "$environment" == "production" ]]; then
+if [[ "$environment" == "production" || "$environment" == "staging" ]]; then
   for required_key in ASAAS_API_KEY ASAAS_BASE_URL; do
     if ! awk -F= -v key="$required_key" '$1 == key && $2 != "" { found = 1 } END { exit !found }' "$selected_env"; then
-      echo "Preencha $required_key em $selected_env antes de iniciar produção." >&2
+      echo "Preencha $required_key em $selected_env antes de iniciar o ambiente $environment." >&2
       exit 1
     fi
   done

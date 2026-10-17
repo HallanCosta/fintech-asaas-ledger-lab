@@ -29,6 +29,17 @@ produção explicitamente:
 ./scripts/run-server.sh production
 ```
 
+Para testar o Sandbox do Asaas explicitamente, use a chave armazenada em
+`server/.env.staging`:
+
+```bash
+./scripts/run-server.sh staging
+```
+
+Se saldo e extrato retornarem `upstreamStatus: 401`, a chave do Sandbox foi
+rejeitada; gere outra no painel do Sandbox e atualize apenas esse arquivo.
+Nunca use a chave de produção para esse teste.
+
 Verifique se o server está funcionando:
 
 ```bash
@@ -97,4 +108,5 @@ Os testes não usam credenciais nem fazem chamadas reais ao Asaas.
 - [Arquitetura](docs/architecture.md)
 - [Stack](docs/stack.md)
 - [Backlog de estudo](docs/issues.md)
+- [Preparação para AWS EC2](docs/deploy-ec2.md)
 - [Documentação oficial do Asaas](https://docs.asaas.com/docs/visao-geral)

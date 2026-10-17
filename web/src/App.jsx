@@ -4,64 +4,60 @@ import { Button } from './components/ui/button.jsx'
 import { Card } from './components/ui/card.jsx'
 import { Separator } from './components/ui/separator.jsx'
 
-const transactions = [
-  {
-    id: 'pix-8192',
-    type: 'Entrada',
-    direction: 'in',
-    title: 'PIX recebido',
-    detail: 'Acme Tecnologia · ID 8192',
-    amount: '+ R$ 4.800,00',
-    status: 'Processado',
-    date: '29 set, 10:42',
-  },
-  {
-    id: 'payment-331',
-    type: 'Saída',
-    direction: 'out',
-    title: 'Pagamento agendado',
-    detail: 'AWS Brasil · boleto',
-    amount: '- R$ 320,00',
-    status: 'Pendente',
-    date: '29 set, 09:18',
-  },
-  {
-    id: 'pix-8177',
-    type: 'Entrada',
-    direction: 'in',
-    title: 'PIX recebido',
-    detail: 'Consultoria Oliveira · ID 8177',
-    amount: '+ R$ 1.250,00',
-    status: 'Processado',
-    date: '28 set, 16:05',
-  },
-  {
-    id: 'transfer-204',
-    type: 'Saída',
-    direction: 'out',
-    title: 'Transferência enviada',
-    detail: 'Folha de pagamento · lote 204',
-    amount: '- R$ 2.140,00',
-    status: 'Processado',
-    date: '28 set, 11:30',
-  },
-  {
-    id: 'pix-8161',
-    type: 'Entrada',
-    direction: 'in',
-    title: 'PIX recebido',
-    detail: 'Studio Norte · ID 8161',
-    amount: '+ R$ 680,00',
-    status: 'Processado',
-    date: '27 set, 14:22',
-  },
-]
-
 const transactionFilters = ['Todas', 'Entradas', 'Saídas']
 const balanceFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
+const dateFormatter = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+const longDateFormatter = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long' })
+const frontendEnvironment = import.meta.env.VITE_ASAAS_ENVIRONMENT || 'Staging · Sandbox'
+const defaultStatementTo = formatDateInput(new Date())
+const defaultStatementFrom = formatDateInput(new Date(Date.now() - 6 * 86400000))
 
 function formatBRL(value) {
   return typeof value === 'number' && Number.isFinite(value) ? balanceFormatter.format(value) : '—'
+}
+
+function formatDateInput(date) {
+  return date.toISOString().slice(0, 10)
+}
+
+function formatDateTime(value) {
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? '—' : dateFormatter.format(date)
+}
+
+async function readApiError(response, fallback) {
+  let payload = null
+  try {
+    payload = await response.json()
+  } catch {
+    // Algumas falhas podem não trazer um corpo JSON.
+  }
+
+  if (response.status === 502 && payload?.upstreamStatus === 401) {
+    return 'A credencial do Asaas foi rejeitada. Gere uma nova chave no ambiente selecionado.'
+  }
+  if (response.status === 429 || response.status === 503) {
+    return 'O Asaas está temporariamente indisponível. Tente novamente em instantes.'
+  }
+  return fallback
+}
+
+function mapTransaction(transaction, index) {
+  const direction = transaction.direction === 'CREDIT' ? 'in' : 'out'
+  const amount = Number(transaction.amount?.amount)
+  const sign = direction === 'in' ? '+' : '-'
+  const externalId = transaction.externalId?.value || `statement-${index}`
+
+  return {
+    id: externalId,
+    type: direction === 'in' ? 'Entrada' : 'Saída',
+    direction,
+    title: transaction.description || 'Movimentação Asaas',
+    detail: `${transaction.accountId || 'Conta Asaas'} · ${externalId}`,
+    amount: `${sign} ${formatBRL(amount)}`,
+    status: 'Processado',
+    date: formatDateTime(transaction.occurredAt),
+  }
 }
 
 function LedgerLogo() {
@@ -92,7 +88,13 @@ function PulseDot() {
   return <span className="pulse-dot" aria-hidden="true" />
 }
 
-function LedgerHeader() {
+function LedgerHeader({ connectionState }) {
+  const connectionLabel = connectionState === 'success'
+    ? 'Sincronizado agora'
+    : connectionState === 'loading'
+      ? 'Sincronizando…'
+      : 'Conexão indisponível'
+
   return (
     <header className="ledger-header">
       <div className="ledger-header-inner">
@@ -113,7 +115,7 @@ function LedgerHeader() {
             <span><small>Conta monitorada</small>Conta principal</span>
             <Chevron />
           </Button>
-          <span className="connection-status"><PulseDot /> Sincronizado agora</span>
+          <span className={`connection-status connection-status-${connectionState}`}><PulseDot /> {connectionLabel}</span>
         </div>
       </div>
     </header>
@@ -167,13 +169,13 @@ function TransactionRow({ transaction }) {
   )
 }
 
-function TransactionsPanel({ filter, onFilterChange }) {
+function TransactionsPanel({ filter, onFilterChange, statement, statementError, statementState, onRetry }) {
   const [query, setQuery] = useState('')
-  const filteredTransactions = useMemo(() => transactions.filter((transaction) => {
+  const filteredTransactions = useMemo(() => statement.filter((transaction) => {
     const matchesFilter = filter === 'Todas' || transaction.type === filter.slice(0, -1)
     const searchable = `${transaction.title} ${transaction.detail}`.toLowerCase()
     return matchesFilter && searchable.includes(query.toLowerCase())
-  }), [filter, query])
+  }), [filter, query, statement])
 
   return (
     <Card as="section" className="panel transactions-panel" aria-labelledby="transactions-title">
@@ -182,7 +184,7 @@ function TransactionsPanel({ filter, onFilterChange }) {
           <span className="panel-kicker">Extrato normalizado</span>
           <h2 id="transactions-title">Movimentações recentes</h2>
         </div>
-        <Button className="panel-link" type="button" variant="ghost">Ver extrato completo <span>→</span></Button>
+        <Button className="panel-link" disabled={statementState === 'loading'} onClick={onRetry} type="button" variant="ghost">Sincronizar extrato <span>↻</span></Button>
       </div>
       <div className="transactions-toolbar">
         <div className="filter-group" role="group" aria-label="Filtrar movimentações">
@@ -204,9 +206,11 @@ function TransactionsPanel({ filter, onFilterChange }) {
           <span role="columnheader">Data</span>
           <span aria-hidden="true" />
         </div>
-        {filteredTransactions.length > 0 ? filteredTransactions.map((transaction) => (
+        {statementState === 'loading' && <div className="empty-transactions" role="status">Carregando extrato do Asaas…</div>}
+        {statementState === 'error' && <div className="empty-transactions" role="alert">{statementError}</div>}
+        {statementState === 'success' && filteredTransactions.length > 0 ? filteredTransactions.map((transaction) => (
           <TransactionRow key={transaction.id} transaction={transaction} />
-        )) : <div className="empty-transactions">Nenhuma movimentação encontrada.</div>}
+        )) : statementState === 'success' && <div className="empty-transactions">Nenhuma movimentação encontrada.</div>}
       </div>
     </Card>
   )
@@ -226,7 +230,7 @@ function AccountPanel({ balance, balanceState, balanceError, onRetry }) {
           <h2 id="account-title">Conta Asaas</h2>
           <span className="account-number">API financeira · conta monitorada</span>
         </div>
-        <Badge variant="success">Ativa</Badge>
+        <Badge variant={isError ? 'warning' : 'success'}>{isError ? 'Indisponível' : 'Ativa'}</Badge>
       </div>
       <Separator />
       <span className="balance-label">Saldo disponível</span>
@@ -248,19 +252,105 @@ function AccountPanel({ balance, balanceState, balanceError, onRetry }) {
       <div className="account-details">
         <div><span>Última sincronização</span><strong>{isReady ? 'agora mesmo' : isLoading ? 'em andamento' : 'aguardando tentativa'}</strong></div>
         <div><span>Fonte de dados</span><strong>GET /api/asaas/balance</strong></div>
-        <div><span>Ambiente</span><strong>Sandbox Asaas</strong></div>
+        <div><span>Ambiente</span><strong>{frontendEnvironment}</strong></div>
         <div><span>Endpoint externo</span><strong>GET /finance/balance</strong></div>
       </div>
     </Card>
   )
 }
 
+function PixPaymentPanel() {
+  const [form, setForm] = useState({
+    customer: '',
+    value: '10.00',
+    dueDate: formatDateInput(new Date(Date.now() + 86400000)),
+    description: 'Cobrança de estudo',
+  })
+  const [payment, setPayment] = useState(null)
+  const [paymentState, setPaymentState] = useState('idle')
+  const [paymentError, setPaymentError] = useState('')
+
+  function updateField(event) {
+    setForm((current) => ({ ...current, [event.target.name]: event.target.value }))
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault()
+    setPaymentState('loading')
+    setPaymentError('')
+    setPayment(null)
+
+    try {
+      const paymentResponse = await fetch('/api/asaas/payments/pix', {
+        method: 'POST',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customer: form.customer,
+          value: Number(form.value),
+          dueDate: form.dueDate,
+          description: form.description,
+          externalReference: `pix-study-${Date.now()}`,
+        }),
+      })
+      if (!paymentResponse.ok) {
+        throw new Error(await readApiError(paymentResponse, 'Não foi possível criar a cobrança Pix.'))
+      }
+
+      const createdPayment = await paymentResponse.json()
+      if (!createdPayment?.id) throw new Error('A API não retornou o identificador da cobrança')
+
+      const qrResponse = await fetch(`/api/asaas/payments/${createdPayment.id}/pix-qrcode`, {
+        headers: { Accept: 'application/json' },
+      })
+      if (!qrResponse.ok) {
+        throw new Error(await readApiError(qrResponse, 'Não foi possível consultar o QR Code Pix.'))
+      }
+
+      const qrCode = await qrResponse.json()
+      setPayment({ ...createdPayment, qrCode })
+      setPaymentState('success')
+    } catch (error) {
+      console.error('Falha ao criar cobrança Pix', error)
+      setPaymentState('error')
+      setPaymentError(error?.message || 'Não foi possível criar a cobrança Pix. Verifique os dados e tente novamente.')
+    }
+  }
+
+  return (
+    <Card as="section" className="panel pix-payment-panel" aria-labelledby="pix-payment-title">
+      <div className="panel-heading">
+        <div>
+          <span className="panel-kicker">Operação Pix</span>
+          <h2 id="pix-payment-title">Criar cobrança Pix</h2>
+        </div>
+        <Badge variant="default">{frontendEnvironment}</Badge>
+      </div>
+      <form className="pix-payment-form" onSubmit={handleSubmit}>
+        <label>Customer ID<input name="customer" onChange={updateField} placeholder="cus_..." required value={form.customer} /></label>
+        <label>Valor<input min="0.01" name="value" onChange={updateField} required step="0.01" type="number" value={form.value} /></label>
+        <label>Vencimento<input name="dueDate" onChange={updateField} required type="date" value={form.dueDate} /></label>
+        <label className="pix-payment-description">Descrição<input name="description" onChange={updateField} value={form.description} /></label>
+        <Button disabled={paymentState === 'loading'} type="submit" variant="primary">{paymentState === 'loading' ? 'Criando…' : 'Criar cobrança'}</Button>
+      </form>
+      {paymentState === 'error' && <div className="payment-feedback payment-feedback-error" role="alert">{paymentError}</div>}
+      {paymentState === 'success' && payment && (
+        <div className="payment-feedback payment-feedback-success" role="status">
+          <strong>Cobrança criada: {payment.id}</strong>
+          {payment.qrCode.encodedImage && <img alt="QR Code Pix da cobrança" src={`data:image/png;base64,${payment.qrCode.encodedImage}`} />}
+          <label>Pix copia e cola<input readOnly value={payment.qrCode.payload || 'Payload não retornado'} /></label>
+          <small>Confira o status da cobrança no Asaas; criar a cobrança não confirma o pagamento.</small>
+        </div>
+      )}
+    </Card>
+  )
+}
+
 function PipelinePanel() {
   const steps = [
-    { label: 'Evento recebido', detail: 'Webhook / polling', state: 'done' },
+    { label: 'API consultada', detail: 'Saldo e extrato Asaas', state: 'done' },
     { label: 'Normalização', detail: 'NormalizedTransaction', state: 'done' },
-    { label: 'Ledger lançado', detail: 'Double-entry', state: 'done' },
-    { label: 'Saldo projetado', detail: 'Projection atualizada', state: 'current' },
+    { label: 'Persistência', detail: 'PostgreSQL · próxima etapa', state: 'current' },
+    { label: 'Webhooks', detail: 'Idempotência · próxima etapa', state: 'current' },
   ]
 
   return (
@@ -270,7 +360,7 @@ function PipelinePanel() {
           <span className="panel-kicker">Processamento</span>
           <h2 id="pipeline-title">Pipeline de entrada</h2>
         </div>
-        <span className="live-label"><PulseDot /> ao vivo</span>
+        <span className="live-label"><PulseDot /> fluxo de estudo</span>
       </div>
       <div className="pipeline-steps">
         {steps.map((step, index) => (
@@ -293,14 +383,14 @@ function ReconciliationPanel() {
           <span className="panel-kicker">Conferência automática</span>
           <h2 id="reconciliation-title">Reconciliação</h2>
         </div>
-        <Badge variant="success">Tudo certo</Badge>
+        <Badge variant="default">Próxima etapa</Badge>
       </div>
       <div className="reconciliation-content">
-        <div className="reconciliation-score"><strong>100%</strong><span>conferido</span></div>
-        <div className="reconciliation-stats"><div><strong>24</strong><span>movimentos</span></div><div><strong>0</strong><span>divergências</span></div></div>
+        <div className="reconciliation-score"><strong>—</strong><span>aguardando persistência</span></div>
+        <div className="reconciliation-stats"><div><strong>—</strong><span>movimentos</span></div><div><strong>—</strong><span>divergências</span></div></div>
       </div>
       <Separator />
-      <div className="reconciliation-footer"><span>Última execução · hoje, 10:42</span><Button className="panel-link" type="button" variant="ghost">Abrir relatório <span>→</span></Button></div>
+      <div className="reconciliation-footer"><span>Disponível após persistência do extrato</span><Button className="panel-link" disabled type="button" variant="ghost">Abrir relatório <span>→</span></Button></div>
     </Card>
   )
 }
@@ -310,6 +400,9 @@ function App() {
   const [balance, setBalance] = useState(null)
   const [balanceState, setBalanceState] = useState('loading')
   const [balanceError, setBalanceError] = useState('Não foi possível carregar o saldo da conta.')
+  const [statement, setStatement] = useState([])
+  const [statementState, setStatementState] = useState('loading')
+  const [statementError, setStatementError] = useState('Não foi possível carregar o extrato da conta.')
 
   const loadBalance = useCallback(async () => {
     setBalanceState('loading')
@@ -323,7 +416,7 @@ function App() {
         signal: controller.signal,
       })
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`)
+        throw new Error(await readApiError(response, 'Não foi possível carregar o saldo.'))
       }
 
       const payload = await response.json()
@@ -339,26 +432,51 @@ function App() {
       if (error?.name === 'AbortError') {
         setBalanceError('A API do Asaas não respondeu em 15 segundos. Tente novamente.')
       } else {
-        setBalanceError('Não foi possível carregar o saldo. Tente novamente.')
+        setBalanceError(error?.message || 'Não foi possível carregar o saldo. Tente novamente.')
       }
     } finally {
       window.clearTimeout(timeoutId)
     }
   }, [])
 
+  const loadStatement = useCallback(async () => {
+    setStatementState('loading')
+    setStatementError('')
+
+    try {
+      const response = await fetch(`/api/asaas/statement?from=${defaultStatementFrom}&to=${defaultStatementTo}`, {
+        headers: { Accept: 'application/json' },
+      })
+      if (!response.ok) {
+        throw new Error(await readApiError(response, 'Não foi possível carregar o extrato.'))
+      }
+
+      const payload = await response.json()
+      if (!Array.isArray(payload)) throw new Error('Resposta de extrato inválida')
+
+      setStatement(payload.map(mapTransaction))
+      setStatementState('success')
+    } catch (error) {
+      console.error('Falha ao carregar o extrato da conta', error)
+      setStatementState('error')
+      setStatementError(error?.message || 'Não foi possível carregar o extrato. Tente novamente.')
+    }
+  }, [])
+
   useEffect(() => {
     void loadBalance()
-  }, [loadBalance])
+    void loadStatement()
+  }, [loadBalance, loadStatement])
 
   const balanceValue = balanceState === 'success' ? formatBRL(balance?.balance) : balanceState === 'loading' ? 'Carregando…' : 'Indisponível'
-  const environmentValue = balanceState === 'success' ? 'Sandbox' : balanceState === 'loading' ? '—' : 'Indisponível'
+  const environmentValue = balanceState === 'success' ? frontendEnvironment : balanceState === 'loading' ? '—' : 'Indisponível'
   const endpointValue = balanceState === 'success' ? 'HTTP 200' : balanceState === 'loading' ? '—' : 'Indisponível'
   const healthValue = balanceState === 'success' ? 'Conectada' : balanceState === 'loading' ? 'Verificando' : 'Indisponível'
   const healthDetail = balanceState === 'success' ? 'endpoint respondendo HTTP 200' : balanceState === 'loading' ? 'consultando o Asaas' : 'tentar novamente'
 
   return (
     <div className="ledger-shell">
-      <LedgerHeader />
+      <LedgerHeader connectionState={balanceState} />
       <main className="ledger-main" id="overview">
         <div className="ledger-content">
           <section className="dashboard-intro">
@@ -367,19 +485,20 @@ function App() {
               <h1>Conta principal</h1>
               <p>Uma visão operacional do saldo, dos eventos e dos lançamentos normalizados.</p>
             </div>
-            <div className="intro-meta"><span className="intro-date">29 de setembro de 2026</span><Button className="sync-button" disabled={balanceState === 'loading'} onClick={loadBalance} type="button" variant="outline"><span>↻</span> {balanceState === 'loading' ? 'Sincronizando…' : 'Sincronizar agora'}</Button></div>
+            <div className="intro-meta"><span className="intro-date">{longDateFormatter.format(new Date())}</span><Button className="sync-button" disabled={balanceState === 'loading' || statementState === 'loading'} onClick={() => { void loadBalance(); void loadStatement() }} type="button" variant="outline"><span>↻</span> {balanceState === 'loading' || statementState === 'loading' ? 'Sincronizando…' : 'Sincronizar agora'}</Button></div>
           </section>
 
           <section className="metrics-grid" aria-label="Resumo da conta">
             <MetricCard detail={balanceState === 'success' ? 'fonte: API Asaas' : healthDetail} icon="◒" label="Saldo disponível" state={balanceState} tone="green" value={balanceValue} />
-            <MetricCard detail="ambiente configurado em server/.env.local" icon="▣" label="Ambiente" state={balanceState} tone="blue" value={environmentValue} />
+            <MetricCard detail="ambiente selecionado no runtime" icon="▣" label="Ambiente" state={balanceState} tone="blue" value={environmentValue} />
             <MetricCard detail="GET /finance/balance" icon="↑" label="Endpoint de saldo" state={balanceState} tone="amber" value={endpointValue} />
             <MetricCard detail={healthDetail} icon="✓" label="Conexão com o Asaas" state={balanceState} tone="violet" value={healthValue} />
           </section>
 
           <section className="content-grid">
-            <TransactionsPanel filter={filter} onFilterChange={setFilter} />
+            <TransactionsPanel filter={filter} onFilterChange={setFilter} onRetry={loadStatement} statement={statement} statementError={statementError} statementState={statementState} />
             <AccountPanel balance={balance} balanceError={balanceError} balanceState={balanceState} onRetry={loadBalance} />
+            <PixPaymentPanel />
             <PipelinePanel />
             <ReconciliationPanel />
           </section>
