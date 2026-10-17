@@ -12,6 +12,11 @@ O Asaas não exige OAuth nem certificado mTLS para este fluxo didático. A API
 key é específica de cada ambiente e deve ficar somente nos arquivos ignorados
 `.env.local`, `.env.staging` e `.env.production`.
 
+A API interna do laboratório é outra credencial. Com `ASAAS_ENABLED=true`, o
+server só sobe se `ASAAS_INTERNAL_API_KEY` estiver preenchida e for diferente
+de `ASAAS_API_KEY`. Quem chama `/api/asaas/**` envia esse segredo no header
+`X-Api-Key`. `/api/health` e `/actuator/health` seguem públicos.
+
 ## URLs e autenticação
 
 | Ambiente | Base URL |
@@ -29,9 +34,10 @@ User-Agent: fintech-pix-lab/0.1
 ## Fluxo de estudo no Sandbox
 
 1. Criar a conta de teste e uma API key.
-2. Habilitar `ASAAS_ENABLED=true` em `server/.env.staging` e iniciar com
-   `./scripts/run-server.sh staging`.
-3. Consultar `GET /api/asaas/balance`.
+2. Habilitar `ASAAS_ENABLED=true` e preencher `ASAAS_API_KEY` e
+   `ASAAS_INTERNAL_API_KEY` em `server/.env.staging` (ou `server/.env.local`).
+   Inicie o Sandbox com `./scripts/run-server.sh staging`.
+3. Consultar `GET /api/asaas/balance` com o header `X-Api-Key`.
 4. Criar um cliente fictício no Asaas.
 5. Criar uma cobrança com `billingType=PIX`.
 6. Confirmar o recebimento pela interface do Sandbox para gerar saldo fictício.
@@ -55,7 +61,8 @@ corrigir usando a credencial de produção.
 - `POST /api/asaas/transfers/pix` → `POST /transfers` com `operationType=PIX`.
 
 As rotas só são registradas quando `ASAAS_ENABLED=true`, evitando que o server
-faça chamadas externas por acidente.
+faça chamadas externas por acidente. Mesmo registradas, elas respondem `401`
+até receberem `X-Api-Key`.
 
 ## Próximos exercícios
 

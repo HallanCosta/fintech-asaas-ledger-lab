@@ -4,6 +4,16 @@ import { Button } from './components/ui/button.jsx'
 import { Card } from './components/ui/card.jsx'
 import { Separator } from './components/ui/separator.jsx'
 
+const internalApiKey = import.meta.env.VITE_ASAAS_INTERNAL_API_KEY
+
+function asaasHeaders(headers = {}) {
+  return {
+    Accept: 'application/json',
+    ...headers,
+    ...(internalApiKey ? { 'X-Api-Key': internalApiKey } : {}),
+  }
+}
+
 const transactionFilters = ['Todas', 'Entradas', 'Saídas']
 const balanceFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
 const dateFormatter = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
@@ -26,6 +36,10 @@ function formatDateTime(value) {
 }
 
 async function readApiError(response, fallback) {
+  if (response.status === 401) {
+    return 'A API recusou a credencial. Defina VITE_ASAAS_INTERNAL_API_KEY em web/.env.local com o mesmo valor de ASAAS_INTERNAL_API_KEY.'
+  }
+
   let payload = null
   try {
     payload = await response.json()
@@ -283,7 +297,7 @@ function PixPaymentPanel() {
     try {
       const paymentResponse = await fetch('/api/asaas/payments/pix', {
         method: 'POST',
-        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        headers: asaasHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           customer: form.customer,
           value: Number(form.value),
@@ -300,7 +314,7 @@ function PixPaymentPanel() {
       if (!createdPayment?.id) throw new Error('A API não retornou o identificador da cobrança')
 
       const qrResponse = await fetch(`/api/asaas/payments/${createdPayment.id}/pix-qrcode`, {
-        headers: { Accept: 'application/json' },
+        headers: asaasHeaders(),
       })
       if (!qrResponse.ok) {
         throw new Error(await readApiError(qrResponse, 'Não foi possível consultar o QR Code Pix.'))
@@ -412,7 +426,7 @@ function App() {
 
     try {
       const response = await fetch('/api/asaas/balance', {
-        headers: { Accept: 'application/json' },
+        headers: asaasHeaders(),
         signal: controller.signal,
       })
       if (!response.ok) {
@@ -445,7 +459,7 @@ function App() {
 
     try {
       const response = await fetch(`/api/asaas/statement?from=${defaultStatementFrom}&to=${defaultStatementTo}`, {
-        headers: { Accept: 'application/json' },
+        headers: asaasHeaders(),
       })
       if (!response.ok) {
         throw new Error(await readApiError(response, 'Não foi possível carregar o extrato.'))

@@ -57,11 +57,39 @@ SERVER_PORT=9090
 ASAAS_ENABLED=true
 ASAAS_ENVIRONMENT=SANDBOX
 ASAAS_BASE_URL=https://api-sandbox.asaas.com/v3
-ASAAS_API_KEY=sua-chave
+ASAAS_API_KEY=sua-chave-do-asaas
+ASAAS_INTERNAL_API_KEY=um-segredo-ascii-diferente
 ```
 
-A chave é enviada no header `access_token`. Nunca versione arquivos `.env`.
-Sandbox e produção usam contas e chaves separadas.
+Gere o segredo interno com `openssl rand -hex 32`. Ele precisa ser diferente da
+chave do Asaas. A chave do Asaas é enviada no header `access_token`. Nunca
+versione arquivos `.env`. Sandbox e produção usam contas e chaves separadas.
+
+Se `ASAAS_ENABLED=true` e `ASAAS_INTERNAL_API_KEY` estiver vazio, ou for igual
+à `ASAAS_API_KEY`, a aplicação não sobe. Isso vale para Sandbox e produção:
+com a integração ligada, as rotas financeiras não podem ficar abertas.
+
+`./scripts/run-server.sh staging` e `./scripts/run-server.sh production`
+recusam iniciar se `ASAAS_API_KEY`, `ASAAS_BASE_URL` ou
+`ASAAS_INTERNAL_API_KEY` estiverem vazios no arquivo de ambiente
+correspondente (`server/.env.staging` ou `server/.env.production`).
+
+## Autenticação da API interna
+
+As rotas `/api/asaas/**` exigem o header `X-Api-Key` com o valor de
+`ASAAS_INTERNAL_API_KEY`. Sem o header, ou com o valor errado, a resposta é
+`401` em JSON. `/api/health` e `/actuator/health` continuam públicos.
+
+```bash
+curl -s http://localhost:9090/api/asaas/balance \
+  -H "X-Api-Key: $ASAAS_INTERNAL_API_KEY"
+```
+
+No dashboard, copie `web/.env.example` para `web/.env.local` e defina
+`VITE_ASAAS_INTERNAL_API_KEY` com o mesmo valor. O Vite embute essa variável
+no bundle do browser: ela protege quem chama a porta `9090` sem o header, mas
+não esconde o segredo de quem abre o dashboard. Não coloque a API key do Asaas
+nessa variável.
 
 ## Endpoints
 
@@ -80,6 +108,7 @@ Exemplo de cobrança Pix:
 ```bash
 curl -X POST http://localhost:9090/api/asaas/payments/pix \
   -H 'Content-Type: application/json' \
+  -H "X-Api-Key: $ASAAS_INTERNAL_API_KEY" \
   -d '{
     "customer": "cus_exemplo",
     "value": 10.00,

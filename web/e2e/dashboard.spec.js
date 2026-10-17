@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test'
 
+// Mesmo valor definido em webServer.env de playwright.config.js.
+const internalApiKey = 'e2e-internal-api-key'
 const qrImage = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='
 
 const statement = [
@@ -21,8 +23,13 @@ const statement = [
   },
 ]
 
+function expectInternalApiKey(route) {
+  expect(route.request().headers()['x-api-key']).toBe(internalApiKey)
+}
+
 async function mockDashboardApi(page, { balanceHandler } = {}) {
   await page.route('**/api/asaas/balance', async (route) => {
+    expectInternalApiKey(route)
     if (balanceHandler) {
       await balanceHandler(route)
       return
@@ -31,6 +38,7 @@ async function mockDashboardApi(page, { balanceHandler } = {}) {
   })
 
   await page.route('**/api/asaas/statement**', async (route) => {
+    expectInternalApiKey(route)
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(statement) })
   })
 }
@@ -72,9 +80,11 @@ test('permite tentar novamente quando o saldo falha', async ({ page }) => {
 test('exibe erro e permite sincronizar novamente quando o extrato falha', async ({ page }) => {
   let statementCalls = 0
   await page.route('**/api/asaas/balance', async (route) => {
+    expectInternalApiKey(route)
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ balance: 123.45 }) })
   })
   await page.route('**/api/asaas/statement**', async (route) => {
+    expectInternalApiKey(route)
     statementCalls += 1
     if (statementCalls < 3) {
       await route.fulfill({ status: 502, contentType: 'application/json', body: JSON.stringify({ code: 'ASAAS_UPSTREAM_ERROR', upstreamStatus: 401 }) })
@@ -93,6 +103,7 @@ test('exibe erro e permite sincronizar novamente quando o extrato falha', async 
 test('cria cobrança Pix e exibe o QR Code retornado', async ({ page }) => {
   await mockDashboardApi(page)
   await page.route('**/api/asaas/payments/pix', async (route) => {
+    expectInternalApiKey(route)
     expect(route.request().method()).toBe('POST')
     const body = route.request().postDataJSON()
     expect(body.customer).toBe('cus_study_001')
@@ -100,6 +111,7 @@ test('cria cobrança Pix e exibe o QR Code retornado', async ({ page }) => {
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 'pay_study_001' }) })
   })
   await page.route('**/api/asaas/payments/pay_study_001/pix-qrcode', async (route) => {
+    expectInternalApiKey(route)
     await route.fulfill({
       status: 200,
       contentType: 'application/json',

@@ -7,6 +7,8 @@ AWS é criado por este projeto automaticamente.
 
 - validar primeiro com `server/.env.staging` e o Sandbox do Asaas;
 - manter API keys e tokens fora da imagem Docker e do Git;
+- definir `ASAAS_INTERNAL_API_KEY` quando `ASAAS_ENABLED=true`; o dashboard
+  envia o mesmo valor no header `X-Api-Key`;
 - expor publicamente apenas HTTPS por um reverse proxy ou load balancer;
 - manter a porta interna do server em `9090`;
 - usar PostgreSQL gerenciado e Redis gerenciado quando o estudo de persistência
