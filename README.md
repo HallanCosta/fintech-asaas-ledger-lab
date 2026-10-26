@@ -6,6 +6,15 @@ Asaas. O foco é aprender HTTP, testes, configuração e integrações financeir
 CQRS, Event Sourcing e Event-Driven ficam fora deste projeto e serão estudados
 em repositórios separados.
 
+## Status
+
+Projeto finalizado como laboratório de estudo: a integração com o Sandbox do
+Asaas (saldo, extrato, cobrança Pix, QR Code e transferência) está funcionando,
+protegida pelo header `X-Api-Key`. A evolução de integrações financeiras segue
+em outro projeto.
+
+![Dashboard do Ledger Lab rodando em staging com o Sandbox do Asaas](docs/images/dashboard-staging.png)
+
 ## Estrutura
 
 ```text
