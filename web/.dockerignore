@@ -1,0 +1,15 @@
+node_modules/
+dist/
+test-results/
+playwright-report/
+designs/
+e2e/
+*.png
+*.log
+# Nunca levar .env.local/.env.production para o build: o Vite embutiria as
+# variáveis VITE_ no bundle (inclusive VITE_ASAAS_INTERNAL_API_KEY).
+.env
+.env.*
+!.env.example
+Dockerfile
+.dockerignore

@@ -1,0 +1,57 @@
+server {
+    listen 80;
+    listen [::]:80;
+    server_name _;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    server_tokens off;
+
+    # Resolve o nome do server via DNS do Docker em tempo de execução (o
+    # entrypoint oficial preenche NGINX_LOCAL_RESOLVERS). Assim o Nginx sobe
+    # mesmo se o server ainda não existir e acompanha a troca de IP quando o
+    # container do server é recriado.
+    resolver ${NGINX_LOCAL_RESOLVERS} valid=10s ipv6=off;
+    set $api_upstream http://${API_UPSTREAM};
+    client_max_body_size 1m;
+
+    gzip on;
+    gzip_types text/plain text/css application/javascript application/json image/svg+xml;
+    gzip_min_length 1024;
+
+    # Health do próprio Nginx (usado pelo HEALTHCHECK do container).
+    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    # API: repassa para o container do server pela rede interna do Compose.
+    # O header X-Api-Key é sempre definido aqui (sobrescreve o que vier do
+    # browser), então a chave interna não precisa ir para o bundle JS.
+    location /api/ {
+        proxy_pass $api_upstream;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Api-Key "${ASAAS_INTERNAL_API_KEY}";
+        proxy_connect_timeout 5s;
+        proxy_read_timeout 30s;
+    }
+
+    # Assets do Vite têm hash no nome: podem ficar em cache por muito tempo.
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files $uri =404;
+    }
+
+    # SPA: qualquer rota desconhecida cai no index.html.
+    location / {
+        add_header Cache-Control "no-cache";
+        try_files $uri $uri/ /index.html;
+    }
+}

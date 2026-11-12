@@ -37,7 +37,7 @@ function formatDateTime(value) {
 
 async function readApiError(response, fallback) {
   if (response.status === 401) {
-    return 'A API recusou a credencial. Defina VITE_ASAAS_INTERNAL_API_KEY em web/.env.local com o mesmo valor de ASAAS_INTERNAL_API_KEY.'
+    return 'A API recusou a credencial. Em dev, defina VITE_ASAAS_INTERNAL_API_KEY em web/.env.local; no Docker, confira ASAAS_INTERNAL_API_KEY do Nginx. O valor deve ser igual ao do server.'
   }
 
   let payload = null

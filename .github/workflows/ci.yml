@@ -38,3 +38,22 @@ jobs:
 
       - name: Validate Docker Compose
         run: docker compose config --quiet
+
+  docker:
+    name: Build Docker images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Dummy production env
+        run: |
+          printf '%s\n' \
+            'ASAAS_ENABLED=false' \
+            'ASAAS_INTERNAL_API_KEY=ci-only-not-a-secret' > server/.env.production
+
+      - name: Validate production Compose
+        run: docker compose -f docker-compose.prod.yml --env-file server/.env.production config --quiet
+
+      - name: Build server and web images
+        run: docker compose -f docker-compose.prod.yml --env-file server/.env.production build
