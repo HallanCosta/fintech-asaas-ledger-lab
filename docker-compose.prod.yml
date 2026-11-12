@@ -1,0 +1,57 @@
+# Server + web prontos para uma EC2 pequena (t2/t3.micro, 1 GB de RAM).
+#
+# Uso (na raiz do repo):
+#   docker compose -f docker-compose.prod.yml --env-file server/.env.production up -d --build
+#
+# --env-file só serve para preencher ${ASAAS_INTERNAL_API_KEY} do web abaixo;
+# o server lê o arquivo inteiro via env_file. O docker-compose.yml continua
+# sendo o ambiente de desenvolvimento (Postgres/Redis) e não é usado aqui.
+
+name: fintech-asaas-ledger-lab
+
+services:
+  server:
+    build: ./server
+    image: fintech-asaas-ledger-lab-server:latest
+    container_name: fintech-ledger-server
+    env_file: server/.env.production
+    environment:
+      SERVER_PORT: "9090"
+      # O app ainda não usa Postgres/Redis; sem isso /actuator/health fica DOWN.
+      MANAGEMENT_HEALTH_DB_ENABLED: "false"
+      MANAGEMENT_HEALTH_REDIS_ENABLED: "false"
+    # Sem "ports": o server só é acessível pela rede interna (via Nginx).
+    expose:
+      - "9090"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+    logging: &logging
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  web:
+    build:
+      context: ./web
+      args:
+        VITE_ASAAS_ENVIRONMENT: ${VITE_ASAAS_ENVIRONMENT:-}
+    image: fintech-asaas-ledger-lab-web:latest
+    container_name: fintech-ledger-web
+    environment:
+      API_UPSTREAM: server:9090
+      ASAAS_INTERNAL_API_KEY: ${ASAAS_INTERNAL_API_KEY:?defina ASAAS_INTERNAL_API_KEY (use --env-file server/.env.production)}
+    ports:
+      - "80:80"
+    depends_on:
+      server:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 64m
+    logging: *logging

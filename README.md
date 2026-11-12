@@ -49,6 +49,19 @@ Se saldo e extrato retornarem `upstreamStatus: 401`, a chave do Sandbox foi
 rejeitada; gere outra no painel do Sandbox e atualize apenas esse arquivo.
 Nunca use a chave de produção para esse teste.
 
+### Docker (server + web)
+
+Para rodar tudo em containers, como na EC2 (server Spring Boot + dashboard
+servido por Nginx na porta `80`):
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file server/.env.production up -d --build
+```
+
+O Nginx repassa `/api/` para o server e injeta o header `X-Api-Key` a partir de
+`ASAAS_INTERNAL_API_KEY`, então a chave não vai para o bundle. Passo a passo em
+[Deploy em AWS EC2](docs/deploy-ec2.md).
+
 Verifique se o server está funcionando:
 
 ```bash
@@ -98,7 +111,8 @@ No dashboard, copie `web/.env.example` para `web/.env.local` e defina
 `VITE_ASAAS_INTERNAL_API_KEY` com o mesmo valor. O Vite embute essa variável
 no bundle do browser: ela protege quem chama a porta `9090` sem o header, mas
 não esconde o segredo de quem abre o dashboard. Não coloque a API key do Asaas
-nessa variável.
+nessa variável. No Docker (`docker-compose.prod.yml`) essa variável não é
+usada: o Nginx injeta o header no proxy e a chave fica fora do bundle.
 
 ## Endpoints
 
@@ -146,5 +160,5 @@ Os testes não usam credenciais nem fazem chamadas reais ao Asaas.
 - [Arquitetura](docs/architecture.md)
 - [Stack](docs/stack.md)
 - [Backlog de estudo](docs/issues.md)
-- [Preparação para AWS EC2](docs/deploy-ec2.md)
+- [Deploy em AWS EC2 com Docker](docs/deploy-ec2.md)
 - [Documentação oficial do Asaas](https://docs.asaas.com/docs/visao-geral)

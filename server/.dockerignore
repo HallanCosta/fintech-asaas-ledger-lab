@@ -1,0 +1,8 @@
+# Só pom.xml e src/ entram na imagem.
+target/
+.env
+.env.*
+*.iml
+.idea/
+.vscode/
+*.log
