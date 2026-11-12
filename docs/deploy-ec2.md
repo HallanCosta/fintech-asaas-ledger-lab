@@ -116,6 +116,8 @@ Asaas não entra no container do Nginx.
 O script equivale a `docker compose -f docker-compose.prod.yml --env-file server/.env.production up -d --build`
 e avisa se o `server/.env.production` não existir.
 
+Para derrubar os containers use `./down.sh`, e para reiniciar tudo (down + up com build) `./restart.sh`.
+
 O build do Maven na micro é lento (alguns minutos) e pode travar por falta de
 memória; com o swap do passo 2 costuma passar. Se travar, use a opção B.
 
