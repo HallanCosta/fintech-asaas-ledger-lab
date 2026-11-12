@@ -59,6 +59,7 @@ servido por Nginx na porta `80`):
 ```
 
 O `up.sh` roda `docker compose -f docker-compose.prod.yml --env-file server/.env.production up -d --build`.
+Para derrubar, use `./down.sh`; para derrubar e subir de novo, `./restart.sh`.
 
 O Nginx repassa `/api/` para o server e injeta o header `X-Api-Key` a partir de
 `ASAAS_INTERNAL_API_KEY`, então a chave não vai para o bundle. Passo a passo em
