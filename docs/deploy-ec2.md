@@ -110,8 +110,11 @@ Asaas não entra no container do Nginx.
 ### Opção A: build na própria EC2 (mais simples)
 
 ```bash
-docker compose -f docker-compose.prod.yml --env-file server/.env.production up -d --build
+./up.sh
 ```
+
+O script equivale a `docker compose -f docker-compose.prod.yml --env-file server/.env.production up -d --build`
+e avisa se o `server/.env.production` não existir.
 
 O build do Maven na micro é lento (alguns minutos) e pode travar por falta de
 memória; com o swap do passo 2 costuma passar. Se travar, use a opção B.

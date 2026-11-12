@@ -55,8 +55,10 @@ Para rodar tudo em containers, como na EC2 (server Spring Boot + dashboard
 servido por Nginx na porta `80`):
 
 ```bash
-docker compose -f docker-compose.prod.yml --env-file server/.env.production up -d --build
+./up.sh
 ```
+
+O `up.sh` roda `docker compose -f docker-compose.prod.yml --env-file server/.env.production up -d --build`.
 
 O Nginx repassa `/api/` para o server e injeta o header `X-Api-Key` a partir de
 `ASAAS_INTERNAL_API_KEY`, então a chave não vai para o bundle. Passo a passo em
